@@ -1,7 +1,7 @@
 {
   "name": "merlian",
   "version": "0.1.0",
-  "description": "Motor stateless de recomendacao de posicionamento e roteamento em grafo",
+  "description": "Stateless graph-based engine for placement recommendation and pathfinding",
   "type": "module",
   "license": "MIT",
   "engines": {

@@ -1,0 +1,4 @@
+# The whole repository requires maintainer review.
+# Combined with "Require review from Code Owners" in the main ruleset,
+# this ensures no contribution lands without approval.
+* @gengibrepower

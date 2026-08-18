@@ -1,62 +1,70 @@
 # Merlian
 
-Motor **stateless** de recomendação de posicionamento e roteamento sobre grafos
-dirigidos ponderados. Recebe a topologia inteira por requisição, computa e
-devolve. Sem estado, sem banco, agnóstico de domínio.
+Stateless engine for placement recommendation and routing over directed weighted
+graphs. It receives the full topology per request, computes, and returns. No
+state, no database, domain-agnostic.
 
-O AMPS (recomendação de vagas de estacionamento) é o **consumidor de exemplo**.
-O mesmo motor serve qualquer problema de "escolher o melhor ponto num grafo e
-rotear até ele" — pátio de maquinário, doca de carga, etc.
+AMPS (a parking-slot recommender) is the **example consumer**. The same engine
+fits any "pick the best node in a graph and route to it" problem — heavy-machinery
+yards, loading docks, etc.
 
-## Filosofia
+## Philosophy
 
-- **Sem estado.** A topologia vem no request; o motor não tem banco.
-- **Agnóstico de domínio.** Raciocina sobre *papéis funcionais*, não sobre nomes
-  de domínio (ver role/label/kind).
-- **Núcleo puro.** A lógica é livre de I/O; a borda HTTP é casca fina.
-- **Contrato como fronteira.** `{ nodes, edges }` publicado e versionado (OpenAPI).
+- **Stateless.** The topology comes in the request; the engine has no database.
+- **Domain-agnostic.** It reasons about *functional roles*, not domain names
+  (see role/label/kind).
+- **Pure core.** The logic is I/O-free; the HTTP edge is a thin shell.
+- **Contract as boundary.** `{ nodes, edges }` is published and versioned (OpenAPI).
 
-## Vocabulário de nó: role / label / kind
+## Node vocabulary: role / label / kind
 
-Três conceitos deliberadamente distintos — a colisão de nomes é uma armadilha:
+Three deliberately distinct concepts — the name clash is a trap:
 
-- **`role`** — externo, funcional, **fixo do motor**: `candidate`, `attractor`,
-  `source`, `transit`. É o que o algoritmo entende.
-- **`label`** — externo, cosmético, do domínio do consumidor (opcional): "Slot",
-  "Bay", "LoadingDock". Ecoado de volta na resposta; o motor **não** o usa no cálculo.
-- **`kind`** — interno, estrutural do núcleo: `slot`, `poi`, `entrance`,
-  `waypoint`. O mapeamento traduz `role → kind` na entrada.
+- **`role`** — external, functional, **fixed by the engine**: `candidate`,
+  `attractor`, `source`, `transit`. This is what the algorithm understands.
+- **`label`** — external, cosmetic, from the consumer's domain (optional):
+  "Slot", "Bay", "LoadingDock". Echoed back in responses; the engine does **not**
+  use it in the computation.
+- **`kind`** — internal, structural to the core: `slot`, `poi`, `entrance`,
+  `waypoint`. The mapping layer translates `role → kind` on the way in.
 
-O consumidor manda `role` (+ `label` opcional); o motor mapeia pra `kind` por dentro.
+The consumer sends `role` (+ optional `label`); the engine maps to `kind` internally.
 
-## Endpoints (visão geral)
+## Endpoints (overview)
 
-Versionados em path (`/v1`). Breaking change ⇒ `/v2`.
+Versioned in the path (`/v1`). Breaking change ⇒ `/v2`.
 
-- `POST /v1/recommendations` — recomenda a vaga. Check-in (com entrada) devolve a
-  rota junto; standby (sem entrada) devolve só a vaga.
-- `POST /v1/paths` — rota pura entre dois nós.
-- `POST /v1/reachability` — vagas alcançáveis por entrada; valida conectividade
-  do layout (serve a RN-11 do AMPS, que decide o que é "publicável").
+- `POST /v1/recommendations` — recommends the slot. Check-in (with an entrance)
+  returns the route too; standby (no entrance) returns only the slot.
+- `POST /v1/paths` — bare route between two nodes.
+- `POST /v1/reachability` — slots reachable from each entrance; validates layout
+  connectivity (serves the consumer's publish-time rule).
 
-`graphVersion` opcional no wire: hash de conteúdo da topologia, usado como chave
-de cache do grafo já hidratado. Otimização, **nunca** fonte de verdade — ausente
-ou errado, o motor só paga o parse de novo.
+`graphVersion` is optional on the wire: a content hash of the topology used as a
+cache key for the hydrated graph. An optimization, **never** a source of truth —
+if absent or wrong, the engine simply re-parses.
 
-> Forma exata de request/response: `docs/api.md` (a escrever) + OpenAPI gerado do Zod.
+## What the engine does **not** do
 
-## O que o motor **não** faz
-
-Não autora nem edita mapas. Não renderiza. Não persiste. Não faz auth nem
-multi-tenant. Não guarda histórico nem gera relatório — isso é do consumidor.
+No map authoring or editing. No rendering. No persistence. No auth or
+multi-tenancy. No history or reporting — that is the consumer's job.
 
 ## Stack
 
-TypeScript (strict, ESM, NodeNext) · Express (casca fina) · Zod (contrato) ·
-Vitest (testes). Núcleo puro sem dependência de I/O.
+TypeScript (strict, ESM, NodeNext) · Express (thin shell) · Zod (contract) ·
+Vitest (tests). Pure core with no I/O dependency.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Every PR goes through CI and maintainer review.
 
 ## Roadmap
 
-- Publicar OpenAPI + subir mock server (consumidores trabalham em paralelo).
-- Reescrita do núcleo em Rust — transparente pro consumidor, já que o contrato
-  trafega em HTTP/JSON agnóstico de linguagem. Não construir nada pra isso agora.
+- Publish an OpenAPI spec + a mock server so consumers can work in parallel.
+- Possible Rust rewrite of the core — transparent to consumers, since the
+  contract travels as language-agnostic HTTP/JSON. Nothing to build for that now.
