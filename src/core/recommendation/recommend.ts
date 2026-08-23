@@ -32,10 +32,14 @@ export function recommend(
 ): SlotNode | null {
   const radiusFactor = input.radiusFactor ?? DEFAULT_RADIUS_FACTOR;
   const withDriving = input.entranceId !== undefined;
+  const drivingPaths =
+    input.entranceId === undefined
+      ? null
+      : pathfinding.shortestPathsFrom(input.graph, input.entranceId);
 
   const scored: ScoredSlot[] = [];
   for (const slot of eligibleSlots(input.graph, input.vehicle, input.occupancy)) {
-    const driving = drivingWeight(input, slot, pathfinding);
+    const driving = drivingPaths === null ? null : drivingPaths.distanceTo(slot.id);
     if (withDriving && driving === null) continue;
     scored.push({
       slot,

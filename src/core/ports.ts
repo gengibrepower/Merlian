@@ -5,7 +5,12 @@ export interface Path {
   readonly totalWeight: number;
 }
 
-export interface PathfindingService {
-  shortestPath(graph: ParkingGraph, from: NodeId, to: NodeId): Path | null;
+export interface ShortestPaths {
+  distanceTo(target: NodeId): number | null;
+  pathTo(target: NodeId): Path | null;
 }
 
+export interface PathfindingService {
+  shortestPath(graph: ParkingGraph, from: NodeId, to: NodeId): Path | null;
+  shortestPathsFrom(graph: ParkingGraph, source: NodeId): ShortestPaths;
+}
