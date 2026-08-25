@@ -1,8 +1,8 @@
 # Algorithm — recommendation and routing
 
-> These parameters were confirmed against the core source (`recommend.ts`,
-> `dijkstra.ts`, `poiDistance.ts`, `ports.ts`), except where marked
-> `[to verify against <file not yet read>]`.
+> Parameters below are confirmed against the core source (`recommend.ts`,
+> `dijkstra.ts`, `shortestPathsFrom.ts`, `poiDistance.ts`, `sizeBias.ts`,
+> `eligibility.ts`, `neighborhood.ts`, `ports.ts`).
 
 Merlian solves two problems over a directed weighted graph `{ nodes, edges }`:
 **recommend** the best slot (`candidate`) and **route** to it. Occupancy does not
@@ -36,49 +36,88 @@ cost = poiNorm(poi) + occWeight · occNorm(occ) + (checkin ? 0.1 · driveNorm(dr
 ```
 
 - **POI** — Euclidean distance slot→POI (`Math.hypot` over `position`).
-  Coefficient `1`. (Requires `position` on every node in the wire.)
+  Coefficient `1`. Requires `position` on every node in the wire.
 - **Occupancy** — neighborhood occupancy; radius = `radiusFactor` × slot length.
   Coefficient `occWeight`.
-- **Driving** — `totalWeight` of the entrance→slot path (Dijkstra). Coefficient `0.1`.
+- **Driving** — `totalWeight` of the entrance→slot path. Coefficient `0.1`.
 
 Lowest cost = recommended. `occWeight = occupancyWeight(vehicle)`: baseline `1`,
-grows for large vehicles — so "1:1:0.1" is the **baseline**, and the occupancy
-term scales with vehicle size.
-`[formula: 1 + k·max(0, w/W0−1, l/L0−1), with W0=1.85, L0=4.5, k=2 — to verify
-against sizeBias.ts]`
+growing for large vehicles — so "1:1:0.1" is the **baseline**, and the occupancy
+term scales with vehicle size:
+
+```
+occWeight = 1 + k · max(0, w/W0 − 1, l/L0 − 1)
+```
+
+with baseline `W0 = 1.85`, `L0 = 4.5` and intensity `k = 2`. A vehicle at or below
+baseline size gets `occWeight = 1`; a larger one weighs neighborhood occupancy more
+heavily (squeezing a big vehicle into a crowded neighborhood is more disruptive).
 
 ## Eligibility
 
-Hard dimension filter: a slot that does not fit the vehicle is never recommended.
-Occupied slots are never recommended. `[detail to verify against eligibility.ts]`
+Two hard filters — a slot failing either is never recommended:
+
+- **Fit** — `slot.width ≥ vehicle.width && slot.length ≥ vehicle.length`. No
+  rotation, no clearance margin.
+- **Availability** — a slot whose id is in `occupancy` is excluded.
 
 ## Normalization and tie-breaking
 
-Min-max per component. Tie: cost → neighborhood occupancy → ascending `id`
+Min-max per component. Tie order: cost → neighborhood occupancy → ascending `id`
 (deterministic).
 
-## Routing (`dijkstra`)
+## Routing
 
 Dijkstra over directed weighted edges. `Path = { nodes: NodeId[], totalWeight }`.
 A two-way street = two edges (the consumer models it; the engine honors it).
 
-## Pending refactor (decided, to implement after the port)
+### Single-source primitive: `shortestPathsFrom`
 
-Today check-in runs a **full Dijkstra per eligible slot** — N slots ⇒ N searches
-from the same entrance, each rebuilding adjacency and scanning the whole graph
-(linear-scan minimum selection, O(V²)). This is wasteful: single-source Dijkstra
-already computes the distance from the entrance to **every** node in one pass.
+Check-in needs the driving distance from the entrance to **every** eligible slot.
+Rather than one point-to-point Dijkstra per slot (N slots ⇒ N searches from the
+same entrance), `shortestPathsFrom(graph, source)` runs **one** single-source
+Dijkstra that settles every reachable node in a single pass, and exposes:
 
-Replace it with a **single** single-source search from the entrance, reading each
-slot's distance and reconstructing the chosen slot's route from the same result
-(`previous`). This collapses N searches into 1 and yields the check-in route as a
-free byproduct.
+- `distanceTo(target)` — cost source→target, or `null` if unreachable.
+- `pathTo(target)` — the route `{ nodes, totalWeight }`, or `null`.
 
-It becomes a primitive — `shortestPathsFrom(graph, from)` — behind three uses:
-the `recommend` driving factor, the check-in route, and `/reachability`
-(reachable = single-source from each entrance). The current point-to-point
-`shortestPath` becomes a case of it.
+`recommend` reads `distanceTo` per slot; the chosen slot's route is reconstructed
+from the same result via `pathTo` — the check-in route as a free byproduct. The
+same primitive backs all three endpoints: recommendation (distance), paths (route),
+reachability (reachable = finite distance from each source).
 
-Do this **after** the mechanical core port (first get the tests green identically,
-proving the port broke nothing; only then the refactor, in its own red-green).
-Swapping the linear scan for a binary heap is a separate, later gain — do not mix.
+The point-to-point `shortestPath(from, to)` stays on the `PathfindingService` port
+for the bare `/paths` case; both live on `dijkstraPathfinding`.
+
+## Future / not in v1
+
+Ideas discussed and **deliberately deferred**. Each is a core change with its own
+red-green, to land after the v1 boundary is up. None is a breaking wire change: an
+optional field added later is additive, so v1 reserves nothing for them now.
+
+- **Aisle width (the "T" rule).** Parking perpendicular to an aisle needs turning
+  room that grows with vehicle length; a too-narrow aisle makes the maneuver
+  impossible. It would act in **both** places, mirroring how vehicle size already
+  works: a **hard filter** in eligibility (aisle below the minimum for this vehicle
+  ⇒ slot ineligible) *and* a **weight** in the score (tighter aisle ⇒ worse, so a
+  large vehicle prefers slots with more maneuvering room). Open modelling question,
+  to settle at implementation time: where the width lives. Natural candidate is an
+  **edge** attribute (`width` on the aisle segment), since the aisle *is* the edge —
+  caveat: a two-way street is two edges over one physical aisle, so both carry the
+  same width (consistent by construction; widths are **not** summed across
+  directions). Whether every edge needs a width (vehicle trafficability along any
+  segment) or only the slot's access edge (the parking maneuver) is unresolved and
+  decides the schema shape.
+- **Reserved / accessible slots.** Slots restricted or preferred for a driver
+  profile (accessible, elderly). This is **not** a `label`: label is cosmetic and
+  never enters the computation, so anything that affects the result is functional by
+  definition. It is a **functional attribute on the `candidate`** — a new axis
+  orthogonal to role (role says the node *is* a candidate slot; this says *what kind*
+  of slot it is) — plus a driver profile on the request and eligibility logic (an
+  accessible slot eligible only for a credentialed driver, or preferred in score).
+- **Binary heap.** `shortestPathsFrom` (and `dijkstra`) pick the minimum by linear
+  scan over the distance map — O(V²). A priority queue drops this to O(E log V).
+  Pure performance, its own red-green, no behavior change.
+- **De-duplicate Dijkstra.** `dijkstra` and `shortestPathsFrom` share mechanics; the
+  point-to-point case can become a special case of the single-source primitive (stop
+  once the target settles). Deferred to keep the port and the refactor legible.
