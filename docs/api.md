@@ -20,14 +20,15 @@ Every request carries the topology as `{ nodes, edges }`.
 { "id": "s1", "role": "candidate", "label": "A-12", "position": { "x": 6, "y": 2 } }
 ```
 
-- `id` — string, unique within the graph.
+- `id` — string, non-empty, unique within the graph.
 - `role` — functional, fixed by the engine (see table). This is what the algorithm
   reasons about.
 - `label` — optional, cosmetic, from the consumer's domain. Echoed back, never used
   in the computation.
 - `position` — `{ x, y }`, required on **every** node (the POI term is Euclidean).
-- `dimensions` — `{ width, length }`, required on `candidate` nodes only, forbidden
-  on the others.
+  Both coordinates must be finite numbers.
+- `dimensions` — `{ width, length }`, both positive and finite; required on
+  `candidate` nodes only, rejected on the others (sending it elsewhere is a `400`).
 
 **Role → kind.** The consumer sends `role`; the mapping layer translates it to the
 internal `kind`:
@@ -45,8 +46,8 @@ internal `kind`:
 { "from": "w1", "to": "s1", "weight": 2 }
 ```
 
-A two-way street is two edges. Weight is any non-negative number (distance, time,
-cost — the consumer's choice; the engine only minimizes their sum).
+A two-way street is two edges. Weight is any non-negative, finite number (distance,
+time, cost — the consumer's choice; the engine only minimizes their sum).
 
 ### graphVersion
 
@@ -58,8 +59,10 @@ engine just re-parses. Omitting it is always valid.
 
 - **200** — success, **including empty results.** No compatible slot is not an
   error; it is `slot: null` with `200`.
-- **400** — malformed request: the shape is wrong (missing field, wrong type,
-  `position` without `x`). Caught by schema validation.
+- **400** — malformed request: the shape is wrong. This covers a missing required
+  field, a wrong type, `position` without `x`, an **unknown or extra field**
+  (every object is strict — it rejects keys it does not declare), and `dimensions`
+  on a node whose role is not `candidate`. Caught by schema validation.
 - **422** — well-formed but incoherent graph (referential integrity). The shape is
   right, the content is not: a dangling edge endpoint, a `poiId` that names no node,
   a `poiId` that names a node whose role is not `attractor`.
@@ -85,7 +88,9 @@ Integrity rules that yield **422**:
 }
 ```
 
-`type` is `malformed_request` for 400 and `invalid_graph` for 422.
+`type` is `malformed_request` for 400 and `invalid_graph` for 422. `issues[]` carries
+one entry per problem found; `path` is a dotted/indexed pointer into the request
+(e.g. `graph.edges[0].weight`, `occupancy[1]`).
 
 ## POST /v1/recommendations
 
@@ -120,10 +125,12 @@ too; without it (standby) only the slot.
 ```
 
 - `vehicle.dimensions` — required.
-- `occupancy` — array of unavailable node ids (occupied + reserved). May be empty.
+- `occupancy` — required array of unavailable node ids (occupied + reserved). May be
+  empty, but the key must be present.
 - `poiId` — required; must name an `attractor`.
 - `entranceId` — optional; must name a `source`. Presence enables check-in.
-- `radiusFactor` — optional, default `2`.
+- `radiusFactor` — optional, positive; defaults to `2` (the default lives in the
+  engine, not the wire).
 
 **Response — check-in (with `entranceId`):** always both keys.
 
@@ -184,7 +191,8 @@ Bare route between two nodes. Any roles — `from`/`to` need only exist.
 
 Which candidates are reachable from each source. Serves both "can I route here from
 there" and the consumer's publish-time connectivity check. No target in the request
-— it uses every `source` node in the graph.
+— it uses every `source` node in the graph. This is a purely topological question:
+`occupancy` plays no part and is not accepted.
 
 **Request:** here `s2` has no incoming edge, so it is unreachable from `e1`.
 
@@ -224,3 +232,4 @@ there" and the consumer's publish-time connectivity check. No target in the requ
 
 With no `source` nodes, `byEntrance` is `[]` and every candidate lands in
 `unreachableSlotIds`.
+
