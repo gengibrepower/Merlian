@@ -17,3 +17,5 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: npm run openapi
+      - run: git diff --exit-code docs/openapi.json
