@@ -67,16 +67,6 @@ export function recommend(
   return ranked[0]?.slot ?? null;
 }
 
-function drivingWeight(
-  input: RecommendationInput,
-  slot: SlotNode,
-  pathfinding: PathfindingService,
-): number | null {
-  if (input.entranceId === undefined) return null;
-  const path = pathfinding.shortestPath(input.graph, input.entranceId, slot.id);
-  return path === null ? null : path.totalWeight;
-}
-
 function normalizer(values: readonly number[]): (value: number) => number {
   const min = Math.min(...values);
   const max = Math.max(...values);
