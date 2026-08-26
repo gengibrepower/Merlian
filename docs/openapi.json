@@ -1,0 +1,674 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Merlian API",
+    "version": "0.1.0",
+    "description": "Stateless placement recommendation and routing engine over directed weighted graphs.",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "paths": {
+    "/v1/recommendations": {
+      "post": {
+        "operationId": "recommend",
+        "summary": "Recommend a slot for a POI, optionally with a check-in route",
+        "requestBody": {
+          "required": true,
+          "constent": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendationsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recommended slot, plus a route in check-in mode",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request body",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Graph fails referential integrity",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/paths": {
+      "post": {
+        "operationId": "shortestPath",
+        "summary": "shortest path between two nodes",
+        "requestBody": {
+          "required": true,
+          "constent": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PathsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shortest route, or null when unreachable",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request body",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Graph fails referential integrity",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reachability": {
+      "post": {
+        "operationId": "reachability",
+        "summary": "Reachable slots per entrance, with a global unreachable summary",
+        "requestBody": {
+          "required": true,
+          "constent": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReachabilityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-entrance reachable slots and global unreachable summary",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReachabilityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request body",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Graph fails referential integrity",
+            "constent": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Dimensions": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "length": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          }
+        },
+        "required": [
+          "width",
+          "length"
+        ],
+        "additionalProperties": false
+      },
+      "Node": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "position": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "candidate"
+                ]
+              },
+              "dimensions": {
+                "$ref": "#/components/schemas/Dimensions"
+              }
+            },
+            "required": [
+              "id",
+              "position",
+              "role",
+              "dimensions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "position": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "attractor"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "position",
+              "role"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "position": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "source"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "position",
+              "role"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "position": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "transit"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "position",
+              "role"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Edge": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "weight"
+        ],
+        "additionalProperties": false
+      },
+      "Graph": {
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Edge"
+            }
+          }
+        },
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "additionalProperties": false
+      },
+      "RecommendationsRequest": {
+        "type": "object",
+        "properties": {
+          "graph": {
+            "$ref": "#/components/schemas/Graph"
+          },
+          "vehicle": {
+            "type": "object",
+            "properties": {
+              "dimensions": {
+                "$ref": "#/components/schemas/Dimensions"
+              }
+            },
+            "required": [
+              "dimensions"
+            ],
+            "additionalProperties": false
+          },
+          "occupancy": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "poiId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entranceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "radiusFactor": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "graphVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "graph",
+          "vehicle",
+          "occupancy",
+          "poiId"
+        ],
+        "additionalProperties": false
+      },
+      "PathsRequest": {
+        "type": "object",
+        "properties": {
+          "graph": {
+            "$ref": "#/components/schemas/Graph"
+          },
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1
+          },
+          "graphVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "graph",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "ReachabilityRequest": {
+        "type": "object",
+        "properties": {
+          "graph": {
+            "$ref": "#/components/schemas/Graph"
+          },
+          "graphVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "graph"
+        ],
+        "additionalProperties": false
+      },
+      "Slot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "Route": {
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "totalWeight": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "nodes",
+          "totalWeight"
+        ],
+        "additionalProperties": false
+      },
+      "RecommendationsResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "slot": {
+                "nullable": true,
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Slot"
+                  }
+                ]
+              },
+              "route": {
+                "nullable": true,
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Route"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "slot",
+              "route"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "slot": {
+                "nullable": true,
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Slot"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "slot"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "PathsResponse": {
+        "type": "object",
+        "properties": {
+          "route": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Route"
+              }
+            ]
+          }
+        },
+        "required": [
+          "route"
+        ],
+        "additionalProperties": false
+      },
+      "ReachabilityResponse": {
+        "type": "object",
+        "properties": {
+          "byEntrance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "entranceId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reachableSlotIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "entranceId",
+                "reachableSlotIds"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "unreachableSlotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "byEntrance",
+          "unreachableSlotIds"
+        ],
+        "additionalProperties": false
+      },
+      "Issue": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "ErrorBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "malformed_request",
+                  "invalid_graph"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Issue"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "issues"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

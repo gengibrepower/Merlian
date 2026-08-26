@@ -1,12 +1,15 @@
+import { z } from 'zod';
 import type { GraphDto, NodeDto } from './graph.js';
 import type { RecommendationsRequestDto } from './recommendations.js';
 import type { PathsRequestDto } from './paths.js';
 import type { ReachabilityRequestDto } from './reachability.js';
 
-export interface Issue {
-  readonly path: string;
-  readonly message: string;
-}
+export const issueSchema = z.strictObject({
+  path: z.string(),
+  message: z.string(),
+});
+
+export type Issue = z.infer<typeof issueSchema>;
 
 const nodeIndex = (nodes: readonly NodeDto[]): Map<string, NodeDto> =>
   new Map(nodes.map((node) => [node.id, node]));

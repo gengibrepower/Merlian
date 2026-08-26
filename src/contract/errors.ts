@@ -1,14 +1,18 @@
-import type { ZodError } from 'zod';
-import type { Issue } from './integrity.js';
+import { z, type ZodError } from 'zod';
+import { issueSchema, type Issue } from './integrity.js';
  
-export type ErrorType = 'malformed_request' | 'invalid_graph';
+export const ErrorTypeSchema = z.enum(['malformed_request', 'invalid_graph']);
 
-export interface ErrorBody {
-  readonly error: {
-    readonly type: ErrorType;
-    readonly issues: Issue[];
-  };
-}
+export type ErrorType = z.infer<typeof ErrorTypeSchema>;
+
+export const errorBodySchema = z.strictObject({
+  error: z.strictObject({
+    type: ErrorTypeSchema,
+    issues: z.array(issueSchema),
+  }),
+});
+
+export type ErrorBody = z.infer<typeof errorBodySchema>;
 
 const formatPath = (path: readonly PropertyKey[]): string => 
   path.reduce<string>((acc, key) => {
