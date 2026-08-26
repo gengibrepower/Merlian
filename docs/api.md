@@ -4,9 +4,9 @@ HTTP/JSON. Versioned in the path (`/v1`); a breaking change bumps to `/v2`. Ever
 endpoint is `POST` with `Content-Type: application/json`. The engine is stateless:
 the full topology travels in each request.
 
-This document is the authored source of the wire contract. The OpenAPI spec
-(roadmap) is generated from the same Zod schemas; if they ever disagree, the Zod
-schemas win.
+This document is the authored source of the wire contract. The machine-readable
+`docs/openapi.json` is generated from the same Zod schemas (`npm run openapi`); if
+the two ever disagree, the Zod schemas win.
 
 ## Conventions
 
@@ -232,4 +232,3 @@ there" and the consumer's publish-time connectivity check. No target in the requ
 
 With no `source` nodes, `byEntrance` is `[]` and every candidate lands in
 `unreachableSlotIds`.
-
