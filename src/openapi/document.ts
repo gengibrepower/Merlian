@@ -48,12 +48,12 @@ const ref = (id: string) => ({ $ref:`#/components/schemas/${id}` });
 
 const jsonBody = (id: string) => ({
   required: true,
-  constent: { 'application/json': { schema: ref(id) } },
+  content: { 'application/json': { schema: ref(id) } },
 });
 
 const jsonResponse = (id: string, description: string) => ({
   description,
-  constent: { 'application/json': { schema: ref(id) } },
+  content: { 'application/json': { schema: ref(id) } },
 });
 
 const errorResponses = {

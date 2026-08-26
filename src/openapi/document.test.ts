@@ -41,9 +41,19 @@ describe('buildOpenApiDocument', () => {
     }
   });
 
+  it('cada operacao usa a chave content com application/json e exemplo', () => {
+    for (const path of Object.values(doc.paths)) {
+      const post = path.post as {
+        requestBody: { content?: Record<string, { example?: unknown }> };
+        responses: Record<string, { content?: Record<string, { example?: unknown }> }>;
+      };
+      expect(post.requestBody.content?.['application/json']?.example).toBeDefined();
+      expect(post.responses['200']?.content?.['application/json']?.example).toBeDefined();
+    }
+  });
+
   it('o componente ErrorBody aceita um corpo de erro real', () => {
     const sample = { error: { type: 'invalid_graph', issues: [{ path: 'poiId', message: 'x' }] } };
     expect(errorBodySchema.parse(sample)).toEqual(sample);
   });
 });
-

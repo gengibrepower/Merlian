@@ -15,7 +15,7 @@
         "summary": "Recommend a slot for a POI, optionally with a check-in route",
         "requestBody": {
           "required": true,
-          "constent": {
+          "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RecommendationsRequest"
@@ -26,7 +26,7 @@
         "responses": {
           "200": {
             "description": "Recommended slot, plus a route in check-in mode",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RecommendationsResponse"
@@ -36,7 +36,7 @@
           },
           "400": {
             "description": "Malformed request body",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -46,7 +46,7 @@
           },
           "422": {
             "description": "Graph fails referential integrity",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -63,7 +63,7 @@
         "summary": "shortest path between two nodes",
         "requestBody": {
           "required": true,
-          "constent": {
+          "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PathsRequest"
@@ -74,7 +74,7 @@
         "responses": {
           "200": {
             "description": "Shortest route, or null when unreachable",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PathsResponse"
@@ -84,7 +84,7 @@
           },
           "400": {
             "description": "Malformed request body",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -94,7 +94,7 @@
           },
           "422": {
             "description": "Graph fails referential integrity",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -111,7 +111,7 @@
         "summary": "Reachable slots per entrance, with a global unreachable summary",
         "requestBody": {
           "required": true,
-          "constent": {
+          "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReachabilityRequest"
@@ -122,7 +122,7 @@
         "responses": {
           "200": {
             "description": "Per-entrance reachable slots and global unreachable summary",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReachabilityResponse"
@@ -132,7 +132,7 @@
           },
           "400": {
             "description": "Malformed request body",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -142,7 +142,7 @@
           },
           "422": {
             "description": "Graph fails referential integrity",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
