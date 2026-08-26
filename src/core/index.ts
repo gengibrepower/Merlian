@@ -4,4 +4,5 @@ export * from './model.js';
 export { recommend } from './recommendation/recommend.js';
 export type { RecommendationInput } from './recommendation/recommend.js';
 export { dijkstra, dijkstraPathfinding } from './pathfinding/dijkstra.js';
+export { slotIds, entranceIds } from './nodes.js';
 
