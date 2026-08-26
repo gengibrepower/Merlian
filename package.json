@@ -14,9 +14,11 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "openapi": "tsx src/openapi/generate.ts"
+    "openapi": "tsx src/openapi/generate.ts",
+    "docs": "redocly build-docs docs/openapi.json -o docs/api.html"
   },
   "devDependencies": {
+    "@redocly/cli": "^2.48.0",
     "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/supertest": "^7.2.1",

@@ -144,3 +144,7 @@ vite.config.ts.timestamp-*
 
 #mise
 mise.toml
+
+# Generated API reference (built in CI, published to Pages)
+docs/api.html
+_site/
