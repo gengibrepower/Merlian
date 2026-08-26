@@ -19,6 +19,78 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RecommendationsRequest"
+              },
+              "example": {
+                "graph": {
+                  "nodes": [
+                    {
+                      "id": "e1",
+                      "role": "source",
+                      "position": {
+                        "x": 0,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "p1",
+                      "role": "attractor",
+                      "label": "Main hall",
+                      "position": {
+                        "x": 20,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "s1",
+                      "role": "candidate",
+                      "label": "A-01",
+                      "position": {
+                        "x": 18,
+                        "y": 2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    },
+                    {
+                      "id": "s2",
+                      "role": "candidate",
+                      "label": "A-02",
+                      "position": {
+                        "x": 19,
+                        "y": -2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "from": "e1",
+                      "to": "s1",
+                      "weight": 19
+                    },
+                    {
+                      "from": "e1",
+                      "to": "s2",
+                      "weight": 20
+                    }
+                  ]
+                },
+                "vehicle": {
+                  "dimensions": {
+                    "width": 1.9,
+                    "length": 4.6
+                  }
+                },
+                "occupancy": [
+                  "s2"
+                ],
+                "poiId": "p1",
+                "entranceId": "e1"
               }
             }
           }
@@ -30,6 +102,19 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RecommendationsResponse"
+                },
+                "example": {
+                  "slot": {
+                    "id": "s1",
+                    "label": "A-01"
+                  },
+                  "route": {
+                    "nodes": [
+                      "e1",
+                      "s1"
+                    ],
+                    "totalWeight": 19
+                  }
                 }
               }
             }
@@ -60,13 +145,76 @@
     "/v1/paths": {
       "post": {
         "operationId": "shortestPath",
-        "summary": "shortest path between two nodes",
+        "summary": "Shortest path between two nodes",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PathsRequest"
+              },
+              "example": {
+                "graph": {
+                  "nodes": [
+                    {
+                      "id": "e1",
+                      "role": "source",
+                      "position": {
+                        "x": 0,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "p1",
+                      "role": "attractor",
+                      "label": "Main hall",
+                      "position": {
+                        "x": 20,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "s1",
+                      "role": "candidate",
+                      "label": "A-01",
+                      "position": {
+                        "x": 18,
+                        "y": 2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    },
+                    {
+                      "id": "s2",
+                      "role": "candidate",
+                      "label": "A-02",
+                      "position": {
+                        "x": 19,
+                        "y": -2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "from": "e1",
+                      "to": "s1",
+                      "weight": 19
+                    },
+                    {
+                      "from": "e1",
+                      "to": "s2",
+                      "weight": 20
+                    }
+                  ]
+                },
+                "from": "e1",
+                "to": "s1"
               }
             }
           }
@@ -78,6 +226,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PathsResponse"
+                },
+                "example": {
+                  "route": {
+                    "nodes": [
+                      "e1",
+                      "s1"
+                    ],
+                    "totalWeight": 19
+                  }
                 }
               }
             }
@@ -115,6 +272,67 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReachabilityRequest"
+              },
+              "example": {
+                "graph": {
+                  "nodes": [
+                    {
+                      "id": "e1",
+                      "role": "source",
+                      "position": {
+                        "x": 0,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "p1",
+                      "role": "attractor",
+                      "label": "Main hall",
+                      "position": {
+                        "x": 20,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "s1",
+                      "role": "candidate",
+                      "label": "A-01",
+                      "position": {
+                        "x": 18,
+                        "y": 2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    },
+                    {
+                      "id": "s2",
+                      "role": "candidate",
+                      "label": "A-02",
+                      "position": {
+                        "x": 19,
+                        "y": -2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "from": "e1",
+                      "to": "s1",
+                      "weight": 19
+                    },
+                    {
+                      "from": "e1",
+                      "to": "s2",
+                      "weight": 20
+                    }
+                  ]
+                }
               }
             }
           }
@@ -126,6 +344,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReachabilityResponse"
+                },
+                "example": {
+                  "byEntrance": [
+                    {
+                      "entranceId": "e1",
+                      "reachableSlotIds": [
+                        "s1",
+                        "s2"
+                      ]
+                    }
+                  ],
+                  "unreachableSlotIds": []
                 }
               }
             }
