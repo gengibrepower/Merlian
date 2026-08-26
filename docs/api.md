@@ -92,6 +92,38 @@ Integrity rules that yield **422**:
 one entry per problem found; `path` is a dotted/indexed pointer into the request
 (e.g. `graph.edges[0].weight`, `occupancy[1]`).
 
+## Mock server
+
+A [Prism](https://github.com/stoplightio/prism) mock is served straight from the
+generated `docs/openapi.json`, so a consumer can build against the contract before
+a real engine is deployed:
+
+```
+npm run mock        # POST http://127.0.0.1:4010/v1/...
+```
+
+A valid request returns the documented `200` example for that endpoint. To inspect
+a specific response shape, force its status with the standard `Prefer` header:
+
+```
+curl -X POST localhost:4010/v1/recommendations \
+  -H 'content-type: application/json' -H 'Prefer: code=422' -d @request.json
+```
+
+Two fidelity limits, by construction:
+
+- The mock validates **shape only**. A malformed body surfaces as `422` (Prism's
+  validation status), whereas the engine returns `400` for shape and reserves `422`
+  for referential integrity — which the mock cannot check, since it never reasons
+  over the graph. Treat it as a response-shape oracle, not an error oracle, and drive
+  error shapes with `Prefer: code=…`.
+- The `400`/`422` bodies are schema-generated placeholders; only the `200` responses
+  carry curated examples. Append `-- --dynamic` to `npm run mock` for randomised
+  bodies instead of the single static example.
+
+The mock serves the committed spec; run `npm run openapi` after changing the contract
+so the mock reflects it.
+
 ## POST /v1/recommendations
 
 Recommends a single slot. With `entranceId` (check-in) the route to that slot comes

@@ -44,6 +44,10 @@ Versioned in the path (`/v1`). Breaking change ⇒ `/v2`.
 cache key for the hydrated graph. An optimization, **never** a source of truth —
 if absent or wrong, the engine simply re-parses.
 
+A [Prism](https://github.com/stoplightio/prism) mock served from the OpenAPI spec
+(`npm run mock`) lets consumers build against these endpoints before a real engine
+is deployed. See [docs/api.md](docs/api.md#mock-server).
+
 ## What the engine does **not** do
 
 No map authoring or editing. No rendering. No persistence. No auth or
@@ -65,6 +69,5 @@ Every PR goes through CI and maintainer review.
 
 ## Roadmap
 
-- Publish an OpenAPI spec + a mock server so consumers can work in parallel.
 - Possible Rust rewrite of the core — transparent to consumers, since the
   contract travels as language-agnostic HTTP/JSON. Nothing to build for that now.
