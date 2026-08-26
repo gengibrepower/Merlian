@@ -28,6 +28,8 @@ jobs:
       - run: npm run docs
       - run: mkdir -p _site && cp docs/api.html _site/index.html
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
@@ -41,4 +43,4 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-
+        
