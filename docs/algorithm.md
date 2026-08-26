@@ -81,10 +81,14 @@ Dijkstra that settles every reachable node in a single pass, and exposes:
 - `distanceTo(target)` — cost source→target, or `null` if unreachable.
 - `pathTo(target)` — the route `{ nodes, totalWeight }`, or `null`.
 
-`recommend` reads `distanceTo` per slot; the chosen slot's route is reconstructed
-from the same result via `pathTo` — the check-in route as a free byproduct. The
-same primitive backs all three endpoints: recommendation (distance), paths (route),
-reachability (reachable = finite distance from each source).
+`recommend` runs **one** `shortestPathsFrom` from the entrance and reads
+`distanceTo` per eligible slot for scoring. It returns only the chosen `SlotNode`,
+though — the `ShortestPaths` result is not surfaced — so the check-in route is
+**not** a free byproduct today: the HTTP layer runs a *second* `shortestPathsFrom`
+from the same entrance and calls `pathTo(slot.id)` to build it (see "Two Dijkstra
+in check-in" below). The same primitive backs all three endpoints: recommendation
+(distance), paths (route), reachability (reachable = finite distance from each
+source).
 
 The point-to-point `shortestPath(from, to)` stays on the `PathfindingService` port
 for the bare `/paths` case; both live on `dijkstraPathfinding`.
@@ -121,3 +125,11 @@ optional field added later is additive, so v1 reserves nothing for them now.
 - **De-duplicate Dijkstra.** `dijkstra` and `shortestPathsFrom` share mechanics; the
   point-to-point case can become a special case of the single-source primitive (stop
   once the target settles). Deferred to keep the port and the refactor legible.
+- **Two Dijkstra in check-in.** `recommend` already runs one `shortestPathsFrom` from
+  the entrance for scoring but returns only the slot; the HTTP layer then runs a
+  second, identical pass from the same entrance to build the route via `pathTo`. Two
+  single-source searches over the same source per check-in request. Surfacing
+  `recommend`'s pathfinding result — returning the route (or the `ShortestPaths`)
+  alongside the slot — makes the check-in route the intended free byproduct and drops
+  the redundant pass. Behavior-preserving; its own red-green. This is an internal
+  change: `recommend`'s return shape is not part of the wire contract, so no `/v2`.
