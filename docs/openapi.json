@@ -15,10 +15,82 @@
         "summary": "Recommend a slot for a POI, optionally with a check-in route",
         "requestBody": {
           "required": true,
-          "constent": {
+          "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RecommendationsRequest"
+              },
+              "example": {
+                "graph": {
+                  "nodes": [
+                    {
+                      "id": "e1",
+                      "role": "source",
+                      "position": {
+                        "x": 0,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "p1",
+                      "role": "attractor",
+                      "label": "Main hall",
+                      "position": {
+                        "x": 20,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "s1",
+                      "role": "candidate",
+                      "label": "A-01",
+                      "position": {
+                        "x": 18,
+                        "y": 2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    },
+                    {
+                      "id": "s2",
+                      "role": "candidate",
+                      "label": "A-02",
+                      "position": {
+                        "x": 19,
+                        "y": -2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "from": "e1",
+                      "to": "s1",
+                      "weight": 19
+                    },
+                    {
+                      "from": "e1",
+                      "to": "s2",
+                      "weight": 20
+                    }
+                  ]
+                },
+                "vehicle": {
+                  "dimensions": {
+                    "width": 1.9,
+                    "length": 4.6
+                  }
+                },
+                "occupancy": [
+                  "s2"
+                ],
+                "poiId": "p1",
+                "entranceId": "e1"
               }
             }
           }
@@ -26,17 +98,30 @@
         "responses": {
           "200": {
             "description": "Recommended slot, plus a route in check-in mode",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RecommendationsResponse"
+                },
+                "example": {
+                  "slot": {
+                    "id": "s1",
+                    "label": "A-01"
+                  },
+                  "route": {
+                    "nodes": [
+                      "e1",
+                      "s1"
+                    ],
+                    "totalWeight": 19
+                  }
                 }
               }
             }
           },
           "400": {
             "description": "Malformed request body",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -46,7 +131,7 @@
           },
           "422": {
             "description": "Graph fails referential integrity",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -60,13 +145,76 @@
     "/v1/paths": {
       "post": {
         "operationId": "shortestPath",
-        "summary": "shortest path between two nodes",
+        "summary": "Shortest path between two nodes",
         "requestBody": {
           "required": true,
-          "constent": {
+          "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PathsRequest"
+              },
+              "example": {
+                "graph": {
+                  "nodes": [
+                    {
+                      "id": "e1",
+                      "role": "source",
+                      "position": {
+                        "x": 0,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "p1",
+                      "role": "attractor",
+                      "label": "Main hall",
+                      "position": {
+                        "x": 20,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "s1",
+                      "role": "candidate",
+                      "label": "A-01",
+                      "position": {
+                        "x": 18,
+                        "y": 2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    },
+                    {
+                      "id": "s2",
+                      "role": "candidate",
+                      "label": "A-02",
+                      "position": {
+                        "x": 19,
+                        "y": -2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "from": "e1",
+                      "to": "s1",
+                      "weight": 19
+                    },
+                    {
+                      "from": "e1",
+                      "to": "s2",
+                      "weight": 20
+                    }
+                  ]
+                },
+                "from": "e1",
+                "to": "s1"
               }
             }
           }
@@ -74,17 +222,26 @@
         "responses": {
           "200": {
             "description": "Shortest route, or null when unreachable",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PathsResponse"
+                },
+                "example": {
+                  "route": {
+                    "nodes": [
+                      "e1",
+                      "s1"
+                    ],
+                    "totalWeight": 19
+                  }
                 }
               }
             }
           },
           "400": {
             "description": "Malformed request body",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -94,7 +251,7 @@
           },
           "422": {
             "description": "Graph fails referential integrity",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -111,10 +268,71 @@
         "summary": "Reachable slots per entrance, with a global unreachable summary",
         "requestBody": {
           "required": true,
-          "constent": {
+          "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReachabilityRequest"
+              },
+              "example": {
+                "graph": {
+                  "nodes": [
+                    {
+                      "id": "e1",
+                      "role": "source",
+                      "position": {
+                        "x": 0,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "p1",
+                      "role": "attractor",
+                      "label": "Main hall",
+                      "position": {
+                        "x": 20,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "id": "s1",
+                      "role": "candidate",
+                      "label": "A-01",
+                      "position": {
+                        "x": 18,
+                        "y": 2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    },
+                    {
+                      "id": "s2",
+                      "role": "candidate",
+                      "label": "A-02",
+                      "position": {
+                        "x": 19,
+                        "y": -2
+                      },
+                      "dimensions": {
+                        "width": 2.5,
+                        "length": 5
+                      }
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "from": "e1",
+                      "to": "s1",
+                      "weight": 19
+                    },
+                    {
+                      "from": "e1",
+                      "to": "s2",
+                      "weight": 20
+                    }
+                  ]
+                }
               }
             }
           }
@@ -122,17 +340,29 @@
         "responses": {
           "200": {
             "description": "Per-entrance reachable slots and global unreachable summary",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReachabilityResponse"
+                },
+                "example": {
+                  "byEntrance": [
+                    {
+                      "entranceId": "e1",
+                      "reachableSlotIds": [
+                        "s1",
+                        "s2"
+                      ]
+                    }
+                  ],
+                  "unreachableSlotIds": []
                 }
               }
             }
           },
           "400": {
             "description": "Malformed request body",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
@@ -142,7 +372,7 @@
           },
           "422": {
             "description": "Graph fails referential integrity",
-            "constent": {
+            "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
