@@ -104,8 +104,17 @@
                   "$ref": "#/components/schemas/RecommendationsResponse"
                 },
                 "example": {
-                  "slot": null,
-                  "route": null
+                  "slot": {
+                    "id": "s1",
+                    "label": "A-01"
+                  },
+                  "route": {
+                    "nodes": [
+                      "e1",
+                      "s1"
+                    ],
+                    "totalWeight": 19
+                  }
                 }
               }
             }
