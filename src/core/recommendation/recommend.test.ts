@@ -15,7 +15,7 @@ describe('recommend', () => {
       ],
       edges: [],
     };
-    expect(recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p' })).toBeNull();
+    expect(recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p' }).slot).toBeNull();
   });
 
   it('vaga única elegível é retornada', () => {
@@ -26,7 +26,7 @@ describe('recommend', () => {
       ],
       edges: [],
     };
-    expect(recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p' })?.id).toBe('s');
+    expect(recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p' }).slot?.id).toBe('s');
   });
 
   it('provisório: mais perto do POI vence quando ocupação empata', () => {
@@ -38,7 +38,7 @@ describe('recommend', () => {
       ],
       edges: [],
     };
-    expect(recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p' })?.id).toBe('A');
+    expect(recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p' }).slot?.id).toBe('A');
   });
 
   it('provisório: vizinhança menos ocupada vence quando POI empata', () => {
@@ -51,7 +51,7 @@ describe('recommend', () => {
       ],
       edges: [],
     };
-    expect(recommend({ graph, vehicle, occupancy: new Set(['na']), poiId: 'p' })?.id).toBe('B');
+    expect(recommend({ graph, vehicle, occupancy: new Set(['na']), poiId: 'p' }).slot?.id).toBe('B');
   });
 
   it('check-in: dirigir (0,1x) desempata e pode mudar a escolha', () => {
@@ -68,8 +68,8 @@ describe('recommend', () => {
       ],
     };
     const base = { graph, vehicle, occupancy: new Set<string>(), poiId: 'p' };
-    expect(recommend(base)?.id).toBe('A');
-    expect(recommend({ ...base, entranceId: 'E' })?.id).toBe('B');
+    expect(recommend(base).slot?.id).toBe('A');
+    expect(recommend({ ...base, entranceId: 'E' }).slot?.id).toBe('B');
   });
 
   it('check-in: descarta vaga sem rota dirigível a partir da entrada', () => {
@@ -82,7 +82,7 @@ describe('recommend', () => {
       ],
       edges: [{ from: 'E', to: 'A', weight: 1 }],
     };
-    expect(recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p', entranceId: 'E' })?.id).toBe('A');
+    expect(recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p', entranceId: 'E' }).slot?.id).toBe('A');
   });
 
   it('RN-14: veículo grande foge de vizinhança cheia (mesmo grafo, escolha muda)', () => {
@@ -106,8 +106,39 @@ describe('recommend', () => {
     };
     const occupancy = new Set(['oa1', 'oa2', 'oc1', 'oc2']);
 
-    expect(recommend({ graph, vehicle: popular, occupancy, poiId: 'p' })?.id).toBe('A');
-    expect(recommend({ graph, vehicle: pickup, occupancy, poiId: 'p' })?.id).toBe('B');
+    expect(recommend({ graph, vehicle: popular, occupancy, poiId: 'p' }).slot?.id).toBe('A');
+    expect(recommend({ graph, vehicle: pickup, occupancy, poiId: 'p' }).slot?.id).toBe('B');
   });
-})
+
+  it('check-in: surfaceia a rota da entrada até a vaga escolhida (byproduct, sem 2º Dijkstra)', () => {
+    const graph: ParkingGraph = {
+      nodes: [
+        { kind: 'entrance', id: 'E', position: { x: 0, y: -5 } },
+        { kind: 'poi', id: 'p', position: { x: 0, y: 0 }, label: 'L' },
+        { kind: 'waypoint', id: 'W', position: { x: 5, y: 0 } },
+        { kind: 'slot', id: 'A', position: { x: 10, y: 0 }, dimensions: fits },
+      ],
+      edges: [
+        { from: 'E', to: 'W', weight: 3 },
+        { from: 'W', to: 'A', weight: 4 },
+      ],
+    };
+    const result = recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p', entranceId: 'E' });
+    expect(result.slot?.id).toBe('A');
+    expect(result.route).toEqual({ nodes: ['E', 'W', 'A'], totalWeight: 7 });
+  });
+
+  it('standby: sem entrada, não há rota', () => {
+    const graph: ParkingGraph = {
+      nodes: [
+        { kind: 'poi', id: 'p', position: { x: 0, y: 0 }, label: 'L' },
+        { kind: 'slot', id: 'A', position: { x: 3, y: 4 }, dimensions: fits },
+      ],
+      edges: [],
+    };
+    const result = recommend({ graph, vehicle, occupancy: new Set<string>(), poiId: 'p' });
+    expect(result.slot?.id).toBe('A');
+    expect(result.route).toBeNull();
+  });
+});
 

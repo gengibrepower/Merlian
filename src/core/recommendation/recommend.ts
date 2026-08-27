@@ -1,7 +1,7 @@
 import { dijkstraPathfinding } from '../pathfinding/dijkstra.js';
 import type { NodeId, ParkingGraph, SlotNode } from '../types.js';
 import type { Occupancy, Vehicle } from '../model.js';
-import type { PathfindingService } from '../ports.js';
+import type { Path, PathfindingService } from '../ports.js';
 import { eligibleSlots } from './eligibility.js';
 import { neighborhoodOccupancy } from './neighborhood.js';
 import { straightLineDistanceToPoi } from './poiDistance.js';
@@ -19,6 +19,11 @@ export interface RecommendationInput {
   readonly radiusFactor?: number;
 }
 
+export interface Recommendation {
+  readonly slot: SlotNode | null;
+  readonly route: Path | null;
+}
+
 interface ScoredSlot {
   readonly slot: SlotNode;
   readonly poi: number;
@@ -29,7 +34,7 @@ interface ScoredSlot {
 export function recommend(
   input: RecommendationInput,
   pathfinding: PathfindingService = dijkstraPathfinding,
-): SlotNode | null {
+): Recommendation {
   const radiusFactor = input.radiusFactor ?? DEFAULT_RADIUS_FACTOR;
   const withDriving = input.entranceId !== undefined;
   const drivingPaths =
@@ -49,7 +54,7 @@ export function recommend(
     });
   }
 
-  if (scored.length === 0) return null;
+  if (scored.length === 0) return { slot: null, route: null };
 
   const poiNorm = normalizer(scored.map((s) => s.poi));
   const occNorm = normalizer(scored.map((s) => s.occupancy));
@@ -64,7 +69,10 @@ export function recommend(
     }))
     .sort((a, b) => a.cost - b.cost || a.occupancy - b.occupancy || (a.slot.id < b.slot.id ? -1 : 1));
 
-  return ranked[0]?.slot ?? null;
+  const best = ranked[0];
+  if (best === undefined) return { slot: null, route: null };
+  const route = drivingPaths === null ? null : drivingPaths.pathTo(best.slot.id);
+  return { slot: best.slot, route };
 }
 
 function normalizer(values: readonly number[]): (value: number) => number {

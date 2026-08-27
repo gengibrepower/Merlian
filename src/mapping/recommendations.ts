@@ -1,4 +1,4 @@
-import type { NodeId, Path, RecommendationInput, SlotNode } from '../core/index.js';
+import type { NodeId, Recommendation, RecommendationInput } from '../core/index.js';
 import type {
   RecommendationsRequestDto,
   RecommendationsResponseDto,
@@ -6,10 +6,6 @@ import type {
 import { hydrateGraph } from './graph.js';
 import { toRouteDto, toSlotDto } from './responses.js';
 
-export interface RecommendationResult {
-  readonly slot: SlotNode | null;
-  readonly route: Path | null;
-}
 export function toRecommendationInput(dto: RecommendationsRequestDto): RecommendationInput {
   return {
     graph: hydrateGraph(dto.graph),
@@ -27,7 +23,7 @@ export function toRecommendationInput(dto: RecommendationsRequestDto): Recommend
 }
 
 export function toRecommendationsResponse(
-  result: RecommendationResult,
+  result: Recommendation,
   mode: 'checkin' | 'standby',
   labels: ReadonlyMap<NodeId, string>,
 ): RecommendationsResponseDto {
