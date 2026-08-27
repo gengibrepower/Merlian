@@ -81,14 +81,15 @@ Dijkstra that settles every reachable node in a single pass, and exposes:
 - `distanceTo(target)` — cost source→target, or `null` if unreachable.
 - `pathTo(target)` — the route `{ nodes, totalWeight }`, or `null`.
 
-`recommend` runs **one** `shortestPathsFrom` from the entrance and reads
-`distanceTo` per eligible slot for scoring. It returns only the chosen `SlotNode`,
-though — the `ShortestPaths` result is not surfaced — so the check-in route is
-**not** a free byproduct today: the HTTP layer runs a *second* `shortestPathsFrom`
-from the same entrance and calls `pathTo(slot.id)` to build it (see "Two Dijkstra
-in check-in" below). The same primitive backs all three endpoints: recommendation
-(distance), paths (route), reachability (reachable = finite distance from each
-source).
+`recommend` runs **one** `shortestPathsFrom` from the entrance, reads `distanceTo`
+per eligible slot for scoring, and — once a slot is chosen — reads `pathTo(slot.id)`
+off that same pass. It returns a `Recommendation` `{ slot, route }`: the check-in
+route is the intended free byproduct of the search the scoring already needed, so the
+HTTP layer runs no pathfinding of its own. Only the finished `Path` is surfaced, not
+the `ShortestPaths` handle, so the search internals (`previous`, and a future heap)
+stay private. In standby (no entrance) there is no search and `route` is `null`. The
+same primitive backs all three endpoints: recommendation (distance + route), paths
+(route), reachability (reachable = finite distance from each source).
 
 The point-to-point `shortestPath(from, to)` stays on the `PathfindingService` port
 for the bare `/paths` case; both live on `dijkstraPathfinding`.
@@ -106,30 +107,25 @@ optional field added later is additive, so v1 reserves nothing for them now.
   ⇒ slot ineligible) *and* a **weight** in the score (tighter aisle ⇒ worse, so a
   large vehicle prefers slots with more maneuvering room). Open modelling question,
   to settle at implementation time: where the width lives. Natural candidate is an
-  **edge** attribute (`width` on the aisle segment), since the aisle *is* the edge —
-  caveat: a two-way street is two edges over one physical aisle, so both carry the
+  **edge** attribute (`width` on the aisle segment),
+  since the aisle *is* the edge — caveat:
+  a two-way street is two edges over
+  one physical aisle, so both carry the
   same width (consistent by construction; widths are **not** summed across
   directions). Whether every edge needs a width (vehicle trafficability along any
   segment) or only the slot's access edge (the parking maneuver) is unresolved and
   decides the schema shape.
 - **Reserved / accessible slots.** Slots restricted or preferred for a driver
   profile (accessible, elderly). This is **not** a `label`: label is cosmetic and
-  never enters the computation, so anything that affects the result is functional by
-  definition. It is a **functional attribute on the `candidate`** — a new axis
-  orthogonal to role (role says the node *is* a candidate slot; this says *what kind*
+  never enters the computation, so anything that affects the result is functional
+  by definition. It is a **functional attribute on the `candidate`** — a new axis
+  orthogonal to role
+  (role says the node *is* a candidate slot; this says *what kind*
   of slot it is) — plus a driver profile on the request and eligibility logic (an
   accessible slot eligible only for a credentialed driver, or preferred in score).
 - **Binary heap.** `shortestPathsFrom` (and `dijkstra`) pick the minimum by linear
   scan over the distance map — O(V²). A priority queue drops this to O(E log V).
   Pure performance, its own red-green, no behavior change.
-- **De-duplicate Dijkstra.** `dijkstra` and `shortestPathsFrom` share mechanics; the
-  point-to-point case can become a special case of the single-source primitive (stop
-  once the target settles). Deferred to keep the port and the refactor legible.
-- **Two Dijkstra in check-in.** `recommend` already runs one `shortestPathsFrom` from
-  the entrance for scoring but returns only the slot; the HTTP layer then runs a
-  second, identical pass from the same entrance to build the route via `pathTo`. Two
-  single-source searches over the same source per check-in request. Surfacing
-  `recommend`'s pathfinding result — returning the route (or the `ShortestPaths`)
-  alongside the slot — makes the check-in route the intended free byproduct and drops
-  the redundant pass. Behavior-preserving; its own red-green. This is an internal
-  change: `recommend`'s return shape is not part of the wire contract, so no `/v2`.
+- **De-duplicate Dijkstra.** `dijkstra` and `shortestPathsFrom` share mechanics;
+  the point-to-point case can become a special case of the single-source primitive
+  (stop once the target settles). Deferred to keep the port and the refactor legible.
