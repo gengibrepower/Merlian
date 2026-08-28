@@ -86,13 +86,27 @@ per eligible slot for scoring, and — once a slot is chosen — reads `pathTo(s
 off that same pass. It returns a `Recommendation` `{ slot, route }`: the check-in
 route is the intended free byproduct of the search the scoring already needed, so the
 HTTP layer runs no pathfinding of its own. Only the finished `Path` is surfaced, not
-the `ShortestPaths` handle, so the search internals (`previous`, and a future heap)
+the `ShortestPaths` handle, so the search internals (`previous`, the binary-heap frontier)
 stay private. In standby (no entrance) there is no search and `route` is `null`. The
 same primitive backs all three endpoints: recommendation (distance + route), paths
 (route), reachability (reachable = finite distance from each source).
 
 The point-to-point `shortestPath(from, to)` stays on the `PathfindingService` port
-for the bare `/paths` case; both live on `dijkstraPathfinding`.
+for the bare `/paths` case; both live on `dijkstraPathfinding` and share one private
+core — point-to-point passes its target so the search stops once that node settles,
+then reads the route off the same `previous` map the full pass would have built.
+
+### Frontier: binary heap
+
+Both the single-source pass and the point-to-point search take the next node from
+a binary min-heap, so a run is O(E log V) instead of O(V²). The heap is a core
+internal, never exposed on the `ShortestPaths` handle. Shortest distances are
+unique, so the heap changes nothing there; among equal-cost routes it returns the
+same one the linear scan did, because ties in tentative distance break by discovery
+order — the node whose finite distance was recorded first is settled first. That
+path tie-break is deterministic but follows insertion order, not `id`; it is
+distinct from the scoring tie-break above, and switching it to ascending `id` would
+be a separate, behavior-changing step.
 
 ## Future / not in v1
 
@@ -122,10 +136,5 @@ optional field added later is additive, so v1 reserves nothing for them now.
   orthogonal to role
   (role says the node *is* a candidate slot; this says *what kind*
   of slot it is) — plus a driver profile on the request and eligibility logic (an
-  accessible slot eligible only for a credentialed driver, or preferred in score).
-- **Binary heap.** `shortestPathsFrom` (and `dijkstra`) pick the minimum by linear
-  scan over the distance map — O(V²). A priority queue drops this to O(E log V).
-  Pure performance, its own red-green, no behavior change.
-- **De-duplicate Dijkstra.** `dijkstra` and `shortestPathsFrom` share mechanics;
-  the point-to-point case can become a special case of the single-source primitive
-  (stop once the target settles). Deferred to keep the port and the refactor legible.
+
+
